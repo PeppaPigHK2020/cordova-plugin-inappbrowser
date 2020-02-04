@@ -160,7 +160,10 @@ public class InAppBrowser extends CordovaPlugin {
      */
     public boolean execute(String action, CordovaArgs args, final CallbackContext callbackContext) throws JSONException {
         if (action.equals("open")) {
-            this.callbackContext = callbackContext;
+            // this.callbackContext = callbackContext;
+            if (this.callbackContext == null) {
+                this.callbackContext = callbackContext;
+            }
             final String url = args.getString(0);
             String t = args.optString(1);
             if (t == null || t.equals("") || t.equals(NULL)) {
@@ -527,31 +530,12 @@ public class InAppBrowser extends CordovaPlugin {
         this.cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                final WebView childView = inAppWebView;
-                // The JS protects against multiple calls, so this should happen only when
-                // closeDialog() is called by other native code.
-                if (childView == null) {
-                    return;
-                }
-
-                childView.setWebViewClient(new WebViewClient() {
-                    // NB: wait for about:blank before dismissing
-                    public void onPageFinished(WebView view, String url) {
-                        if (dialog != null) {
-                            dialog.dismiss();
-                            dialog = null;
-                        }
-                    }
-                });
-                // NB: From SDK 19: "If you call methods on WebView from any thread
-                // other than your app's UI thread, it can cause unexpected results."
-                // http://developer.android.com/guide/webapps/migrating.html#Threads
-                childView.loadUrl("about:blank");
-
+                // dialog.hide();
+                dialog.dismiss();
                 try {
                     JSONObject obj = new JSONObject();
                     obj.put("type", EXIT_EVENT);
-                    sendUpdate(obj, false);
+                    sendUpdate(obj, true);
                 } catch (JSONException ex) {
                     LOG.d(LOG_TAG, "Should never happen");
                 }
@@ -790,11 +774,14 @@ public class InAppBrowser extends CordovaPlugin {
                     dialog.dismiss();
                 };
 
-                // Let's create the main dialog
-                dialog = new InAppBrowserDialog(cordova.getActivity(), android.R.style.Theme_NoTitleBar);
+                // dialog = new InAppBrowserDialog(cordova.getActivity(), android.R.style.Theme_Black_NoTitleBar);
+                dialog = new InAppBrowserDialog(cordova.getActivity(), android.R.style.ThemeOverlay);
                 dialog.getWindow().getAttributes().windowAnimations = android.R.style.Animation_Dialog;
+                // // getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+                // // dialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                // // dialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN, WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+                // dialog.getWindow().setFlags(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
                 dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
                 dialog.setCancelable(true);
                 dialog.setInAppBroswer(getInAppBrowser());
 
@@ -842,7 +829,7 @@ public class InAppBrowser extends CordovaPlugin {
                     back.setBackgroundDrawable(null);
                 back.setImageDrawable(backIcon);
                 back.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                back.setPadding(0, this.dpToPixels(10), 0, this.dpToPixels(10));
+                back.setPadding(this.dpToPixels(10), this.dpToPixels(10), this.dpToPixels(15), this.dpToPixels(10));
                 if (Build.VERSION.SDK_INT >= 16)
                     back.getAdjustViewBounds();
 
@@ -1101,14 +1088,14 @@ public class InAppBrowser extends CordovaPlugin {
      * @param status the status code to return to the JavaScript environment
      */
     private void sendUpdate(JSONObject obj, boolean keepCallback, PluginResult.Status status) {
-        if (callbackContext != null) {
-            PluginResult result = new PluginResult(status, obj);
-            result.setKeepCallback(keepCallback);
-            callbackContext.sendPluginResult(result);
-            if (!keepCallback) {
-                callbackContext = null;
-            }
+        // if (callbackContext != null) {
+        PluginResult result = new PluginResult(status, obj);
+        result.setKeepCallback(keepCallback);
+        callbackContext.sendPluginResult(result);
+        if (!keepCallback) {
+            callbackContext = null;
         }
+        // }
     }
 
     /**
